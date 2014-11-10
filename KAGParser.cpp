@@ -1994,6 +1994,10 @@ parse_start:
 						attrib_storage = val;
 						DicObj->PropGet(0, __target_name.c_str(), __target_name.GetHint(), &val, DicObj);
 						attrib_target = val;
+						if(attrib_target == TJS_W("")) {
+							DicObj->PropGet(0, __default_name.c_str(), __default_name.GetHint(), &val, DicObj);
+							attrib_target = val;
+						}
 
 						// fire onCall event
 						bool process = true;
