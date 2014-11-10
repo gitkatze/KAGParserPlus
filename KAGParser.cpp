@@ -1415,6 +1415,7 @@ parse_start:
 	static ttstr __storage_name(TJSMapGlobalStringMap(TJS_W("storage")));
 	static ttstr __target_name(TJSMapGlobalStringMap(TJS_W("target")));
 	static ttstr __exp_name(TJSMapGlobalStringMap(TJS_W("exp")));
+	static ttstr __default_name(TJSMapGlobalStringMap(TJS_W("default")));
 
 	while(true)
 	{
@@ -1740,6 +1741,10 @@ parse_start:
 						ttstr exp;
 						DicObj->PropGet(0, __exp_name.c_str(), __exp_name.GetHint(), &val, DicObj);
 						exp = val;
+						if(exp == TJS_W("")) {
+							DicObj->PropGet(0, __default_name.c_str(), __default_name.GetHint(), &val, DicObj);
+							exp = val;
+						}
 						if(exp == TJS_W(""))
 							TVPThrowExceptionMessage(TVPKAGSyntaxError);
 						TVPExecuteExpression(exp, Owner, &val);
@@ -1772,6 +1777,11 @@ parse_start:
 						ttstr exp;
 						DicObj->PropGet(0, __exp_name.c_str(), __exp_name.GetHint(), &val, DicObj);
 						exp = val;
+						if(exp == TJS_W("")) {
+							DicObj->PropGet(0, __default_name.c_str(), __default_name.GetHint(), &val, DicObj);
+							exp = val;
+						}
+
 						//const std::string s = exp.AsStdString();
 						if(exp == TJS_W(""))
 							TVPThrowExceptionMessage(TVPKAGSyntaxError);
@@ -1841,6 +1851,11 @@ parse_start:
 							ttstr exp;
 							DicObj->PropGet(0, __exp_name.c_str(), __exp_name.GetHint(), &val, DicObj);
 							exp = val;
+							if(exp == TJS_W("")) {
+								DicObj->PropGet(0, __default_name.c_str(), __default_name.GetHint(), &val, DicObj);
+								exp = val;
+							}
+
 							if(exp == TJS_W(""))
 								TVPThrowExceptionMessage(TVPKAGSyntaxError);
 							TVPExecuteExpression(exp, Owner, &val);
@@ -1944,7 +1959,10 @@ parse_start:
 						attrib_storage = val;
 						DicObj->PropGet(0, __target_name.c_str(), __target_name.GetHint(), &val, DicObj);
 						attrib_target = val;
-
+						if(attrib_target == TJS_W("")) {
+							DicObj->PropGet(0, __default_name.c_str(), __default_name.GetHint(), &val, DicObj);
+							attrib_target = val;
+						}
 
 						// fire onJump event
 						bool process = true;
@@ -2010,6 +2028,10 @@ parse_start:
 						attrib_storage = val;
 						DicObj->PropGet(0, __target_name.c_str(), __target_name.GetHint(), &val, DicObj);
 						attrib_target = val;
+						if(attrib_target == TJS_W("")) {
+							DicObj->PropGet(0, __default_name.c_str(), __default_name.GetHint(), &val, DicObj);
+							attrib_target = val;
+						}
 
 						// fire onReturn event
 						bool process = true;
@@ -2037,6 +2059,10 @@ parse_start:
 							tTJSVariant val;
 							DicObj->PropGet(0, TJS_W("name"), 0, &val, DicObj);
 							RecordingMacroName = val;
+							if(RecordingMacroName == TJS_W("")) {
+								DicObj->PropGet(0, __default_name.c_str(), __default_name.GetHint(), &val, DicObj);
+								RecordingMacroName = val;
+							}
 							RecordingMacroName.ToLowerCase();
 							if(RecordingMacroName == TJS_W(""))
 								TVPThrowExceptionMessage(TVPKAGSyntaxError);
@@ -2054,6 +2080,10 @@ parse_start:
 							tTJSVariant val;
 							DicObj->PropGet(0, TJS_W("name"), 0, &val, DicObj);
 							ttstr macroname = val;
+							if(macroname == TJS_W("")) {
+								DicObj->PropGet(0, __default_name.c_str(), __default_name.GetHint(), &val, DicObj);
+								macroname = val;
+							}
 							if(TJS_FAILED(
 								Macros->DeleteMember(0, macroname.c_str(), 0, Macros)))
 								TVPThrowExceptionMessage(TVPUnknownMacroName, macroname);
@@ -2093,9 +2123,11 @@ parse_start:
 				continue;
 			}
 
+			const tjs_int attribnamestartindex = CurPos;
 			const tjs_char *attribnamestart = CurLineStr + CurPos;
 			while(CurLineStr[CurPos] && !TVPIsWS(CurLineStr[CurPos]) &&
-				CurLineStr[CurPos] != TJS_W('=') && CurLineStr[CurPos] != ldelim)
+				CurLineStr[CurPos] != TJS_W('=') && CurLineStr[CurPos] != ldelim &&
+				CurLineStr[CurPos] != TJS_W('\"') && CurLineStr[CurPos] != TJS_W('\''))
 					CurPos ++;
 
 			const tjs_char *attribnameend = CurLineStr + CurPos;
@@ -2113,9 +2145,10 @@ parse_start:
 			if(CurLineStr[CurPos] != TJS_W('='))
 			{
 				// arrtibute value omitted
-				value = TJS_W("true"); // always true
+				attribname = TJS_W("default");
+				CurPos = attribnamestartindex - 1;
 			}
-			else
+
 			{
 				if(CurLineStr[CurPos] == 0)
 					TVPThrowExceptionMessage(TVPKAGSyntaxError);
@@ -2166,6 +2199,7 @@ parse_start:
 
 				// unescape ` character of value
 				value = ttstr(valuestart, valueend - valuestart);
+
 				if(valueend != valuestart)
 				{
 					// value has at least one character
