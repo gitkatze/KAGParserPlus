@@ -2138,6 +2138,8 @@ parse_start:
 
 			ttstr attribname(attribnamestart, attribnameend - attribnamestart);
 			attribname.ToLowerCase();
+			ttstr attribname_org(attribname);
+			bool isomitvalue = false;
 
 			// =
 			while(TVPIsWS(CurLineStr[CurPos])) CurPos ++;
@@ -2149,8 +2151,10 @@ parse_start:
 			if(CurLineStr[CurPos] != TJS_W('='))
 			{
 				// arrtibute value omitted
+				// add default attribute
 				attribname = TJS_W("default");
 				CurPos = attribnamestartindex - 1;
+				isomitvalue = true;
 			}
 
 			{
@@ -2281,9 +2285,15 @@ parse_start:
 			}
 
 			// store value into the dictionary object
-			if(store)
+			if (store) {
 				DicObj->PropSetByVS(TJS_MEMBERENSURE,
 					attribname.AsVariantStringNoAddRef(), &ValueVariant, DicObj);
+				if (isomitvalue) {
+					ValueVariant = TJS_W("true");
+					DicObj->PropSetByVS(TJS_MEMBERENSURE,
+						attribname_org.AsVariantStringNoAddRef(), &ValueVariant, DicObj);
+				}
+			}
 		}
 	}
 
